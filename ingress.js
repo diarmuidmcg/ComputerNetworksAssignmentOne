@@ -15,24 +15,56 @@ ingress.on("error", (error) => {
 
 // emits on new datagram msg
 ingress.on("message", (msg, info) => {
-  console.log(
-    "udp_server",
-    "info",
-    msg.toString() +
-      ` | Received ${msg.length} bytes from ${info.address}:${info.port}`
-  );
+  console.log("got msg");
+  // console.log(
+  //   "udp_server",
+  //   "info",
+  //   msg.toString() +
+  //     ` | Received ${msg.length} bytes from ${info.address}:${info.port}`
+  // );
 
-  let timestp = new Date();
-  const response = {
+  // define workers (these names are completely arbitrary)
+  const WEEVE_TXT_PORT = "8081";
+  const REFUNK_TXT_PORT = "8082";
+
+  // define response
+  let response = {
     description: "UDP PORT TEST BY Diarmuid McGonagle",
     serverPort: config.port,
-    timestamp: timestp.toJSON(),
+    timestamp: null,
+    worker: null,
     received: {
       message: msg.toString(),
       fromIP: info.address,
       fromPort: info.port,
     },
   };
+
+  // check if msg is requesting a txt (make all case insensitive)
+  if (msg.toString().toLowerCase().includes("txt")) {
+    if (msg.toString().toLowerCase().includes("weeve")) {
+      response.description = "getting weeve txt";
+      response.worker = "weeve";
+      // send to weeve worker
+    } else if (msg.toString().toLowerCase().includes("refunk")) {
+      // send to refunk worker
+      response.description = "getting refunk txt";
+      response.worker = "refunk";
+    } else {
+      // return we don't have that file, sry
+      response.description = "we don't have that file";
+    }
+
+    // send request to correct worker based on txt file
+    // wait for response
+    // forward that response on
+  } else {
+    response.description = "please specify a txt file you're looking for";
+  }
+
+  let timestp = new Date();
+  response.timestamp = timestp.toJSON();
+
   const data = Buffer.from(JSON.stringify(response));
 
   //sending msg
