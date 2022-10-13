@@ -5,9 +5,17 @@ import { Worker, isMainThread, parentPort } from "node:worker_threads";
 
 // --------------------creating a udp ingress --------------------
 
-// here create worker
-// the worker will be responsible for locating the file, converting it to binary
-const newWorker = new Worker("./worker.js", { workerData: "text.txt" });
+const newWorker = new Worker("./worker.js");
+// here create workers
+// the workers will be responsible for locating the file, converting it to binary
+const workerPool = [
+  // Start a pool of four workers
+  new Worker("./worker.js"),
+  new Worker("./worker.js"),
+  new Worker("./worker.js"),
+  new Worker("./worker.js"),
+];
+const waiting = [];
 
 // creating a udp ingress
 const ingress = dgram.createSocket("udp4");
@@ -20,14 +28,7 @@ ingress.on("error", (error) => {
 
 // emits on new datagram msg
 ingress.on("message", (msg, info) => {
-  console.log("got msg from client");
-
-  // define workers (these names are completely arbitrary)
-
-  // const refunkWorker = new Worker("./worker.js", { workerData: "my new text" });
-
   // define response
-
   let timestp = new Date();
   let response = {
     description: "UDP PORT TEST BY Diarmuid McGonagle",
@@ -42,18 +43,17 @@ ingress.on("message", (msg, info) => {
     },
   };
 
-  // workers job is to parse the txt file into binary
-
   // check if msg is requesting a txt (make all case insensitive)
   if (msg.toString().toLowerCase().includes("txt")) {
     console.log("has txt");
+    // send the req to the worker so it can get the file
     newWorker.postMessage("hello world");
+    // when it gets the file, itll return here
     newWorker.once("message", (fileInfo) => {
-      // return here
+      // set content here (will prolly need to change)
       response.contentReturned = fileInfo;
-      console.log("inside msg");
+      // convert resp to buffer
       const data = Buffer.from(JSON.stringify(response));
-
       //sending msg
       ingress.send(data, info.port, info.address, (error, bytes) => {
         if (error) {
@@ -61,18 +61,18 @@ ingress.on("message", (msg, info) => {
           ingress.close();
         } else {
           console.log("udp_server", "info", "Data sent");
+          // If requests are waiting, reuse the current worker to handle the queued
+          // request. Add the worker to pool if no requests are queued.
+          if (waiting.length > 0) waiting.shift()(worker);
+          else workerPool.push(worker);
         }
       });
     });
-
-    // send request to correct worker based on txt file
-    // wait for response
-    // forward that response on
   } else {
     console.log("pls specify txt");
     response.description = "please specify a txt file you're looking for";
+    // convert resp to buffer
     const data = Buffer.from(JSON.stringify(response));
-
     //sending msg
     ingress.send(data, info.port, info.address, (error, bytes) => {
       if (error) {
