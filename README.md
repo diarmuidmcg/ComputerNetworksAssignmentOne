@@ -12,8 +12,19 @@ npm run ingress
 
 Build an image from a Dockerfile and run in a new container
 
-```docker
+```
 docker build .
+```
+
+Get the image id of the docker you just built
+
+```
+docker images
+```
+
+Run the image
+
+```
 docker run -i -p 8080:8080/udp [IMAGE_ID]
 ```
 
