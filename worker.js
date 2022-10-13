@@ -5,6 +5,14 @@ parentPort.on("message", (textData) => {
   parentPort.postMessage(solution);
 });
 
+// checks textData for a file & then either begins
+// processing it or returns that it doesnt exist
+// identifyFile()
+
+// if needed, may need to convert txt/img files into binary so that
+// they can be sent to the client. this function will do that
+// convertFileToBinary()
+
 // if (msg.toString().toLowerCase().includes("weeve")) {
 //   response.description = "getting weeve txt";
 //   response.worker = "weeve";
