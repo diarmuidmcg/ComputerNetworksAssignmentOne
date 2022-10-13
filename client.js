@@ -5,7 +5,7 @@ import conf from "./config.js";
 const client = dgram.createSocket("udp4");
 
 //buffer msg
-const data = Buffer.from("single msg sent");
+const data = Buffer.from("refunk txt");
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
@@ -27,7 +27,7 @@ client.send(data, conf.port, conf.serverHost, (error) => {
   }
 });
 
-const data1 = Buffer.from("my txt file");
+const data1 = Buffer.from("weeve txt");
 const data2 = Buffer.from("comp networks");
 
 //sending multiple msg
