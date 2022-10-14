@@ -12,36 +12,23 @@ parentPort.on("message", (textData) => {
 // processing it or returns that it doesnt exist
 function identifyFile(stringData) {
   if (files.includes(stringData)) {
-    return "has file " + stringData;
+    return convertFileToBinary(stringData);
   } else
-    return "does NOT have file " + stringData + " in " + JSON.stringify(files);
+    return {
+      status: "404",
+      description: "File Not Found",
+      message:
+        "could not locate file " + stringData + " in " + JSON.stringify(files),
+    };
   // now check if this name is included in list of files
 }
 
 // if needed, may need to convert txt/img files into binary so that
 // they can be sent to the client. this function will do that
-// convertFileToBinary()
-
-// if (msg.toString().toLowerCase().includes("weeve")) {
-//   response.description = "getting weeve txt";
-//   response.worker = "weeve";
-//   // send to weeve worker
-//
-//   weeveWorker.onmessage = (event) => {
-//     console.log(JSON.stringify(event.data));
-//     response.contentReturned = event.data;
-//   };
-// } else if (msg.toString().toLowerCase().includes("refunk")) {
-//   // send to refunk worker
-//   response.description = "getting refunk txt";
-//   response.worker = "refunk";
-//
-//   // send to refunk worker
-//   refunkWorker.onmessage = (event) => {
-//     console.log(JSON.stringify(event.data));
-//     response.contentReturned = event.data;
-//   };
-// } else {
-//   // return we don't have that file, sry
-//   response.description = "we don't have that file";
-// }
+function convertFileToBinary(stringData) {
+  return {
+    status: "200",
+    description: "File Found",
+    message: "heres my file boss man",
+  };
+}

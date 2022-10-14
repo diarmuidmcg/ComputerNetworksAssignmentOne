@@ -32,7 +32,6 @@ ingress.on("message", (msg, info) => {
   // check if msg is requesting a txt (make all case insensitive)
   if (genMsg.includes("txt")) {
     console.log("has txt " + genMsg);
-
     if (workerPool.length > 0) {
       const newWorker = workerPool.shift();
       handleRequest(newWorker, genMsg, info);
@@ -45,7 +44,8 @@ ingress.on("message", (msg, info) => {
     // define response
     let timestp = new Date();
     let response = {
-      description: "UDP PORT TEST BY Diarmuid McGonagle",
+      description: "please specify a txt file you're looking for",
+      status: 400,
       contentReturned: null,
       serverPort: config.port,
       timestamp: timestp.toJSON(),
@@ -56,7 +56,6 @@ ingress.on("message", (msg, info) => {
         fromPort: info.port,
       },
     };
-    response.description = "please specify a txt file you're looking for";
     // convert resp to buffer
     const data = Buffer.from(JSON.stringify(response));
     //sending msg
@@ -73,13 +72,13 @@ ingress.on("message", (msg, info) => {
 
 function handleRequest(worker, msg, info) {
   console.log("processing " + msg);
-
   // send the req to the worker so it can get the file
   worker.postMessage(msg);
   // define response
   let timestp = new Date();
   let response = {
     description: "UDP PORT TEST BY Diarmuid McGonagle",
+    status: 0,
     contentReturned: null,
     serverPort: config.port,
     timestamp: timestp.toJSON(),
@@ -92,14 +91,14 @@ function handleRequest(worker, msg, info) {
   };
   // when it gets the file, itll return here
   worker.once("message", (fileInfo) => {
-    response.description = "successfully got file";
+    response.description = fileInfo.description;
+    response.status = fileInfo.status;
     // set content here (will prolly need to change)
-    response.contentReturned = fileInfo;
+    response.contentReturned = fileInfo.message;
     // convert resp to buffer
     const data = Buffer.from(JSON.stringify(response));
     //sending msg
     ingress.send(data, info.port, info.address, (error, bytes) => {
-      console.log("sending from ingress ");
       if (error) {
         console.log("udp_server", "error", error);
         ingress.close();
@@ -110,7 +109,6 @@ function handleRequest(worker, msg, info) {
         if (waiting.length > 0) {
           const newJob = waiting.shift();
           console.log("waiting large " + msg);
-          console.log(JSON.stringify(newJob));
           handleRequest(worker, newJob.genMsg, newJob.info);
         } else {
           console.log("waiting 0 so putting worker back");

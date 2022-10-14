@@ -5,7 +5,7 @@ import conf from "./config.js";
 const client = dgram.createSocket("udp4");
 
 //buffer msg
-let data = Buffer.from("first.txt");
+let data = Buffer.from("refunk.txt");
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
