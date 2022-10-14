@@ -28,54 +28,34 @@ ingress.on("error", (error) => {
 
 // emits on new datagram msg
 ingress.on("message", (msg, info) => {
-  // define response
-  let timestp = new Date();
-  let response = {
-    description: "UDP PORT TEST BY Diarmuid McGonagle",
-    contentReturned: null,
-    serverPort: config.port,
-    timestamp: timestp.toJSON(),
-    worker: null,
-    received: {
-      message: msg.toString(),
-      fromIP: info.address,
-      fromPort: info.port,
-    },
-  };
-
+  const genMsg = msg.toString().toLowerCase();
   // check if msg is requesting a txt (make all case insensitive)
-  if (msg.toString().toLowerCase().includes("txt")) {
-    console.log("has txt " + msg.toString().toLowerCase());
-    const newWorker = workerPool.shift();
-    // send the req to the worker so it can get the file
-    newWorker.postMessage(msg.toString().toLowerCase());
-    // when it gets the file, itll return here
-    newWorker.once("message", (fileInfo) => {
-      response.description = "successfully got file";
-      // set content here (will prolly need to change)
-      response.contentReturned = fileInfo;
-      // convert resp to buffer
-      const data = Buffer.from(JSON.stringify(response));
-      //sending msg
-      ingress.send(data, info.port, info.address, (error, bytes) => {
-        if (error) {
-          console.log("udp_server", "error", error);
-          ingress.close();
-        } else {
-          console.log(
-            "udp_server",
-            "info",
-            "Data sent w msg " + msg.toString().toLowerCase()
-          );
-          // If requests are waiting, reuse the current worker to handle the queued
-          // request. Add the worker to pool if no requests are queued.
-          if (waiting.length > 0) waiting.shift()(newWorker);
-          else workerPool.push(newWorker);
-        }
-      });
-    });
+  if (genMsg.includes("txt")) {
+    console.log("has txt " + genMsg);
+
+    if (workerPool.length > 0) {
+      const newWorker = workerPool.shift();
+      handleRequest(newWorker, genMsg, info);
+    } else {
+      console.log("workerPool full for req " + genMsg);
+      waiting.push({ genMsg, info });
+    }
   } else {
     console.log("pls specify txt");
+    // define response
+    let timestp = new Date();
+    let response = {
+      description: "UDP PORT TEST BY Diarmuid McGonagle",
+      contentReturned: null,
+      serverPort: config.port,
+      timestamp: timestp.toJSON(),
+      worker: null,
+      received: {
+        message: msg.toString(),
+        fromIP: info.address,
+        fromPort: info.port,
+      },
+    };
     response.description = "please specify a txt file you're looking for";
     // convert resp to buffer
     const data = Buffer.from(JSON.stringify(response));
@@ -90,6 +70,56 @@ ingress.on("message", (msg, info) => {
     });
   }
 }); // end ingress.on
+
+function handleRequest(worker, msg, info) {
+  console.log("processing " + msg);
+
+  // send the req to the worker so it can get the file
+  worker.postMessage(msg);
+  // define response
+  let timestp = new Date();
+  let response = {
+    description: "UDP PORT TEST BY Diarmuid McGonagle",
+    contentReturned: null,
+    serverPort: config.port,
+    timestamp: timestp.toJSON(),
+    worker: null,
+    received: {
+      message: msg.toString(),
+      fromIP: info.address,
+      fromPort: info.port,
+    },
+  };
+  // when it gets the file, itll return here
+  worker.once("message", (fileInfo) => {
+    response.description = "successfully got file";
+    // set content here (will prolly need to change)
+    response.contentReturned = fileInfo;
+    // convert resp to buffer
+    const data = Buffer.from(JSON.stringify(response));
+    //sending msg
+    ingress.send(data, info.port, info.address, (error, bytes) => {
+      console.log("sending from ingress ");
+      if (error) {
+        console.log("udp_server", "error", error);
+        ingress.close();
+      } else {
+        console.log("udp_server", "info", "Data sent w msg " + msg);
+        // If requests are waiting, reuse the current worker to handle the queued
+        // request. Add the worker to pool if no requests are queued.
+        if (waiting.length > 0) {
+          const newJob = waiting.shift();
+          console.log("waiting large " + msg);
+          console.log(JSON.stringify(newJob));
+          handleRequest(worker, newJob.genMsg, newJob.info);
+        } else {
+          console.log("waiting 0 so putting worker back");
+          workerPool.push(worker);
+        }
+      }
+    });
+  });
+}
 
 //emits when socket is ready and listening for datagram msgs
 ingress.on("listening", () => {
