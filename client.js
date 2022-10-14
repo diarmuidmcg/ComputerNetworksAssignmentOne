@@ -27,7 +27,7 @@ client.send(data, conf.port, conf.serverHost, (error) => {
   }
 });
 
-const data1 = Buffer.from("weeve.txt");
+const data1 = Buffer.from("weeve.txt ");
 const data2 = Buffer.from("comp networks");
 
 //sending multiple msg

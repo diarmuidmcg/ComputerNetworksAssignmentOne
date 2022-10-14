@@ -5,7 +5,7 @@ import { Worker, isMainThread, parentPort } from "node:worker_threads";
 
 // --------------------creating a udp ingress --------------------
 
-const newWorker = new Worker("./worker.js");
+// const newWorker = new Worker("./worker.js");
 // here create workers
 // the workers will be responsible for locating the file, converting it to binary
 const workerPool = [
@@ -45,7 +45,8 @@ ingress.on("message", (msg, info) => {
 
   // check if msg is requesting a txt (make all case insensitive)
   if (msg.toString().toLowerCase().includes("txt")) {
-    console.log("has txt");
+    console.log("has txt " + msg.toString().toLowerCase());
+    const newWorker = workerPool.shift();
     // send the req to the worker so it can get the file
     newWorker.postMessage(msg.toString().toLowerCase());
     // when it gets the file, itll return here
@@ -61,7 +62,11 @@ ingress.on("message", (msg, info) => {
           console.log("udp_server", "error", error);
           ingress.close();
         } else {
-          console.log("udp_server", "info", "Data sent");
+          console.log(
+            "udp_server",
+            "info",
+            "Data sent w msg " + msg.toString().toLowerCase()
+          );
           // If requests are waiting, reuse the current worker to handle the queued
           // request. Add the worker to pool if no requests are queued.
           if (waiting.length > 0) waiting.shift()(newWorker);
