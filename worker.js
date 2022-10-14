@@ -1,13 +1,22 @@
 import { parentPort } from "node:worker_threads";
 
+import fs from "fs";
+var files = fs.readdirSync("./filesToReturn");
+
 parentPort.on("message", (textData) => {
-  const solution = "solveSudoku(sudokuData)";
+  const solution = identifyFile(textData);
   parentPort.postMessage(solution);
 });
 
 // checks textData for a file & then either begins
 // processing it or returns that it doesnt exist
-// identifyFile()
+function identifyFile(stringData) {
+  if (files.includes(stringData)) {
+    return "has file " + stringData;
+  } else
+    return "does NOT have file " + stringData + " in " + JSON.stringify(files);
+  // now check if this name is included in list of files
+}
 
 // if needed, may need to convert txt/img files into binary so that
 // they can be sent to the client. this function will do that

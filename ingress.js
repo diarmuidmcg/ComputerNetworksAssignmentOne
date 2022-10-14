@@ -47,9 +47,10 @@ ingress.on("message", (msg, info) => {
   if (msg.toString().toLowerCase().includes("txt")) {
     console.log("has txt");
     // send the req to the worker so it can get the file
-    newWorker.postMessage("hello world");
+    newWorker.postMessage(msg.toString().toLowerCase());
     // when it gets the file, itll return here
     newWorker.once("message", (fileInfo) => {
+      response.description = "successfully got file";
       // set content here (will prolly need to change)
       response.contentReturned = fileInfo;
       // convert resp to buffer
@@ -63,8 +64,8 @@ ingress.on("message", (msg, info) => {
           console.log("udp_server", "info", "Data sent");
           // If requests are waiting, reuse the current worker to handle the queued
           // request. Add the worker to pool if no requests are queued.
-          if (waiting.length > 0) waiting.shift()(worker);
-          else workerPool.push(worker);
+          if (waiting.length > 0) waiting.shift()(newWorker);
+          else workerPool.push(newWorker);
         }
       });
     });
