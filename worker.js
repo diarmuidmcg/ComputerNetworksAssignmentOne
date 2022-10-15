@@ -26,9 +26,13 @@ function identifyFile(stringData) {
 // if needed, may need to convert txt/img files into binary so that
 // they can be sent to the client. this function will do that
 function convertFileToBinary(stringData) {
+  const contents = fs.readFileSync(`./filesToReturn/${stringData}`, {
+    encoding: "base64",
+  });
+
   return {
     status: "200",
     description: "File Found",
-    message: "heres my file boss man",
+    message: contents,
   };
 }

@@ -44,12 +44,13 @@ handleServerInput();
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
-  console.log(
-    "Received %d bytes from %s:%d\n",
-    msg.length,
-    info.address,
-    info.port
-  );
+  const returnAsJson = JSON.parse(msg.toString());
+  if (returnAsJson.status == 200) {
+    // convert base 64 back to text
+    let buff = new Buffer.from(returnAsJson.contentReturned, "base64");
+    let text = buff.toString("ascii");
+    console.log("\nFile contents are\n" + text);
+  }
   // decrement since its been answered
   numberOfReqs--;
   // show input when everything answered
