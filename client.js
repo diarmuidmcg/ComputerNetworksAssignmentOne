@@ -12,28 +12,35 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-let data;
+// var for how many file reqs sent at once, used to prompt user input again
+let numberOfReqs;
 
 function readLineAsync(message) {
   return new Promise((resolve, reject) => {
     rl.question(message, (answer) => {
+      // exit process if exit
       if (answer == "exit") return process.exit();
-      data = Buffer.from(answer);
-      sendMessage(data);
+      // get all requests
+      let requestedFiles = answer.split(" ");
+      numberOfReqs = requestedFiles.length;
+      // iterate thru & send to server
+      for (let i = 0; i < numberOfReqs; i++) {
+        let data = Buffer.from(requestedFiles[i]);
+        sendMessage(data);
+      }
       resolve(answer);
     });
   });
 }
 
 async function handleServerInput() {
-  await readLineAsync("what would you like to query?\n");
-  handleServerInput();
+  await readLineAsync(
+    "what would you like to query?\nLeave spaces between files to serve more than one\n"
+  );
 }
 
+// initial ask for user input
 handleServerInput();
-
-//buffer msg
-// let data = Buffer.from("refunk.txt");
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
@@ -43,6 +50,13 @@ client.on("message", (msg, info) => {
     info.address,
     info.port
   );
+  // decrement since its been answered
+  numberOfReqs--;
+  // show input when everything answered
+  if (numberOfReqs == 0) {
+    console.log("\n");
+    handleServerInput();
+  }
 });
 
 function sendMessage(data) {
@@ -60,55 +74,3 @@ function sendMessage(data) {
     }
   });
 }
-
-// data = Buffer.from("second.txt ");
-// client.send(data, conf.port, conf.serverHost, (error) => {
-//   if (error) {
-//     console.log(error);
-//     client.close();
-//   } else {
-//     console.log("single msg sent to ingress from ", conf.serverHost, conf.port);
-//   }
-// });
-// data = Buffer.from("third.txt ");
-// client.send(data, conf.port, conf.serverHost, (error) => {
-//   if (error) {
-//     console.log(error);
-//     client.close();
-//   } else {
-//     console.log("single msg sent to ingress from ", conf.serverHost, conf.port);
-//   }
-// });
-// data = Buffer.from("fourth.txt ");
-// client.send(data, conf.port, conf.serverHost, (error) => {
-//   if (error) {
-//     console.log(error);
-//     client.close();
-//   } else {
-//     console.log("single msg sent to ingress from ", conf.serverHost, conf.port);
-//   }
-// });
-// data = Buffer.from("fifth.txt ");
-//
-// client.send(data, conf.port, conf.serverHost, (error) => {
-//   if (error) {
-//     console.log(error);
-//     client.close();
-//   } else {
-//     console.log("single msg sent to ingress from ", conf.serverHost, conf.port);
-//   }
-// });
-// data = Buffer.from("sixth.txt ");
-// client.send(data, conf.port, conf.serverHost, (error) => {
-//   if (error) {
-//     console.log(error);
-//     client.close();
-//   } else {
-//     console.log("single msg sent to ingress from ", conf.serverHost, conf.port);
-//   }
-// });
-
-// setTimeout(() => {
-//   console.log(`shutting down client due to timeout of ${conf.timeout} seconds`);
-//   client.close();
-// }, conf.timeout);
