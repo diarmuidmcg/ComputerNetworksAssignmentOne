@@ -30,7 +30,7 @@ ingress.on("error", (error) => {
 ingress.on("message", (msg, info) => {
   const genMsg = msg.toString().toLowerCase();
   // check if msg is requesting a txt (make all case insensitive)
-  if (genMsg.includes("txt")) {
+  if (genMsg.includes("txt") || genMsg.includes("jpg")) {
     console.log("has txt " + genMsg);
     if (workerPool.length > 0) {
       const newWorker = workerPool.shift();
