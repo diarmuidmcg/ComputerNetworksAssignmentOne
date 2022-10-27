@@ -64,9 +64,17 @@ client.on("message", (msg, info) => {
   }
 });
 
-function sendMessage(data) {
+function sendMessage(payload) {
+  console.log("payload is ");
+  // create header
+  const header = new Uint8Array(2);
+  // since client msg, first header byte is 2
+  header[0] = 2;
+  // set 3rd object to payload
+
+  const data = Buffer.from(header);
   //sending msg
-  client.send(data, conf.port, conf.serverHost, (error) => {
+  client.send([data, payload], conf.port, conf.serverHost, (error) => {
     if (error) {
       console.log(error);
       client.close();

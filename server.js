@@ -8,7 +8,7 @@ import config from "./config.js";
 const ingress = dgram.createSocket("udp4");
 
 let clients = [];
-const workers = [];
+let workers = [];
 
 // emits when any error occurs
 ingress.on("error", (error) => {
@@ -20,6 +20,9 @@ ingress.on("error", (error) => {
 ingress.on("message", (msg, info) => {
   // check header for who it's from
   console.log(msg);
+  console.log("msg 0 is " + msg[0]);
+  console.log("msg 1 is " + msg[1]);
+
   console.log(info);
   const headerByteOne = msg[0];
   switch (headerByteOne) {
@@ -33,6 +36,8 @@ ingress.on("message", (msg, info) => {
       break;
     // is client msg
     case 2:
+      const payload = new TextDecoder().decode(msg);
+      handleClientMessage(payload, info);
       break;
     // is worker msg
     case 3:
@@ -44,6 +49,8 @@ ingress.on("message", (msg, info) => {
       break;
     // is worker close
     case 5:
+      // remove worker by port number
+      workers = workers.filter((item) => item.port !== info.port);
       break;
 
     default:
@@ -55,13 +62,13 @@ ingress.on("message", (msg, info) => {
 function handleWorkerSetup(headerByteTwo, port) {
   switch (headerByteTwo) {
     case 0:
-      workers.push({ refunk: port });
+      workers.push({ file: "refunk", port: port });
       break;
     case 1:
-      workers.push({ weeve: port });
+      workers.push({ file: "weeve", port: port });
       break;
     case 2:
-      workers.push({ picture: port });
+      workers.push({ file: "picture", port: port });
       break;
     default:
   }
@@ -69,9 +76,21 @@ function handleWorkerSetup(headerByteTwo, port) {
 
 function handleClientMessage(msg, info) {
   const genMsg = msg.toString().toLowerCase();
+  console.log("gen msg is " + genMsg);
   // check if msg is requesting a txt (make all case insensitive)
   if (genMsg.includes("txt") || genMsg.includes("jpg")) {
     console.log("has txt " + genMsg);
+    // get proper port from worker list
+    let worker = workers.filter((item) => genMsg.includes(item.file));
+    console.log("worker is " + JSON.stringify(worker[0]));
+    ingress.send(msg, worker[0].port, info.address, (error, bytes) => {
+      if (error) {
+        console.log("udp_server", "error", error);
+        ingress.close();
+      } else {
+        console.log("udp_server", "info", "Data sent");
+      }
+    });
   } else {
     console.log("pls specify txt");
     // define response
