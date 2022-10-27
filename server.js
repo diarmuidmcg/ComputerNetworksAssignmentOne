@@ -7,6 +7,9 @@ import config from "./config.js";
 // creating a udp ingress
 const ingress = dgram.createSocket("udp4");
 
+const clients = [];
+const workers = [];
+
 // emits when any error occurs
 ingress.on("error", (error) => {
   console.log("udp_server", "error", error);
@@ -17,7 +20,50 @@ ingress.on("error", (error) => {
 ingress.on("message", (msg, info) => {
   // check header for who it's from
   console.log(msg);
+  console.log(info);
+  const headerByteOne = msg[0];
+  switch (headerByteOne) {
+    // is client init
+    case 0:
+      break;
+    // is worker init
+    case 1:
+      handleWorkerSetup(msg[1], info.port);
+      break;
+    // is client msg
+    case 2:
+      break;
+    // is worker msg
+    case 3:
+      break;
+    // is client close
+    case 4:
+      break;
+    // is worker close
+    case 5:
+      break;
 
+    default:
+  }
+  console.log(JSON.stringify(workers));
+}); // end ingress.on
+
+function handleWorkerSetup(headerByteTwo, port) {
+  switch (headerByteTwo) {
+    case 0:
+      workers.push({ refunk: port });
+      break;
+    case 1:
+      workers.push({ weeve: port });
+      break;
+    case 2:
+      workers.push({ picture: port });
+      break;
+    default:
+  }
+}
+
+function handleClientMessage(msg, info) {
   const genMsg = msg.toString().toLowerCase();
   // check if msg is requesting a txt (make all case insensitive)
   if (genMsg.includes("txt") || genMsg.includes("jpg")) {
@@ -51,7 +97,7 @@ ingress.on("message", (msg, info) => {
       }
     });
   }
-}); // end ingress.on
+}
 
 function handleRequest(msg, info) {
   // define response
