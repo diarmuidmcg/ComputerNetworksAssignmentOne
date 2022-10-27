@@ -83,7 +83,7 @@ worker.on("message", (msg, info) => {
     encoding: "base64",
   });
 
-  sendFileMessage(contents);
+  sendFileMessage(msg, contents);
 });
 
 function sendSetUpMessage(fileToReturn) {
@@ -110,14 +110,16 @@ function sendSetUpMessage(fileToReturn) {
   });
 }
 
-function sendFileMessage(file) {
+function sendFileMessage(msg, file) {
   console.log("sending file ");
+  console.log("client id is " + msg[2]);
   // create header
-  const header = new Uint8Array(2);
+  const header = new Uint8Array(3);
   // since worker returning file, first header byte is 3
   header[0] = 3;
   // set second headerbyte to file to be returned
   header[1] = fileReturned;
+  header[2] = msg[2];
   const data = Buffer.from(header);
 
   //sending msg

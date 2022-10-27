@@ -10,6 +10,9 @@ const ingress = dgram.createSocket("udp4");
 let clients = [];
 let workers = [];
 
+let availableClients = [0, 1, 2, 3, 4, 5, 6, 7];
+let takenClients = [];
+
 // emits when any error occurs
 ingress.on("error", (error) => {
   console.log("udp_server", "error", error);
@@ -28,7 +31,9 @@ ingress.on("message", (msg, info) => {
   switch (headerByteOne) {
     // is client init
     case 0:
-      clients.push(info.port);
+      const clientId = availableClients.pop();
+      takenClients.push(clientId);
+      clients.push({ port: info.port, index: clientId });
       break;
     // is worker init
     case 1:
@@ -40,11 +45,12 @@ ingress.on("message", (msg, info) => {
       break;
     // is worker msg
     case 3:
+      handleWorkerFile(msg, info);
       break;
     // is client close
     case 4:
       // remove client by port number
-      clients = clients.filter((item) => item !== info.port);
+      clients = clients.filter((item) => item.port !== info.port);
       break;
     // is worker close
     case 5:
@@ -76,14 +82,22 @@ function handleWorkerSetup(headerByteTwo, port) {
 function handleClientMessage(msg, info) {
   const payload = new TextDecoder().decode(msg);
   const genMsg = payload.toString().toLowerCase();
-  console.log("gen msg is " + genMsg);
   // check if msg is requesting a txt (make all case insensitive)
   if (genMsg.includes("txt") || genMsg.includes("jpg")) {
-    console.log("has txt " + genMsg);
+    // get proper portId from client list
+    let client = clients.filter((item) => item.port === info.port);
+    let clientPortId = client[0].index;
+
+    // create header
+    const header = new Uint8Array(3);
+    // since worker returning file, first header byte is 3
+    header[0] = 6;
+    header[2] = clientPortId;
+
+    const data = Buffer.from(header);
     // get proper port from worker list
     let worker = workers.filter((item) => genMsg.includes(item.file));
-    console.log("worker is " + JSON.stringify(worker[0]));
-    ingress.send(msg, worker[0].port, info.address, (error, bytes) => {
+    ingress.send(data, worker[0].port, info.address, (error, bytes) => {
       if (error) {
         console.log("udp_server", "error", error);
         ingress.close();
@@ -92,7 +106,6 @@ function handleClientMessage(msg, info) {
       }
     });
   } else {
-    console.log("pls specify txt");
     // define response
     let timestp = new Date();
     let response = {
@@ -122,40 +135,34 @@ function handleClientMessage(msg, info) {
   }
 }
 
-function handleRequest(msg, info) {
-  // define response
-  let timestp = new Date();
-  let response = {
-    description: "UDP PORT TEST BY Diarmuid McGonagle",
-    status: 0,
-    contentReturned: null,
-    serverPort: config.port,
-    timestamp: timestp.toJSON(),
-    worker: null,
-    received: {
-      message: msg.toString(),
-      fromIP: info.address,
-      fromPort: info.port,
-    },
-  };
-  // when it gets the file, itll return here
-  worker.once("message", (fileInfo) => {
-    response.description = fileInfo.description;
-    response.status = fileInfo.status;
-    // set content here (will prolly need to change)
-    response.contentReturned = fileInfo.message;
-    // convert resp to buffer
-    const data = Buffer.from(JSON.stringify(response));
-    //sending msg
-    ingress.send(data, info.port, info.address, (error, bytes) => {
+function handleWorkerFile(msg, info) {
+  const portId = msg[2];
+  let client = clients.filter((item) => item.index === portId);
+
+  const payload = new TextDecoder().decode(msg);
+
+  // create header
+  const header = new Uint8Array(2);
+  // since worker setup, first header byte is 1
+  header[0] = 7;
+  // set second headerbyte to file to be returned
+  header[1] = msg[1];
+  const data = Buffer.from(header);
+
+  //sending msg
+  ingress.send(
+    [data, payload],
+    client[0].port,
+    info.address,
+    (error, bytes) => {
       if (error) {
         console.log("udp_server", "error", error);
         ingress.close();
       } else {
         console.log("udp_server", "info", "Data sent w msg " + msg);
       }
-    });
-  });
+    }
+  );
 }
 
 //emits when socket is ready and listening for datagram msgs

@@ -48,13 +48,13 @@ sendSetUpMessage();
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
-  const returnAsJson = JSON.parse(msg.toString());
-  if (returnAsJson.status == 200) {
-    // convert base 64 back to text
-    let buff = new Buffer.from(returnAsJson.contentReturned, "base64");
-    let text = buff.toString("ascii");
-    console.log("\nFile contents are\n" + text);
-  }
+  const payload = new TextDecoder().decode(msg);
+  const genMsg = payload.toString();
+
+  let buff = new Buffer.from(genMsg, "base64");
+  let text = buff.toString("ascii");
+  console.log("\nFile contents are\n" + text);
+
   // decrement since its been answered
   numberOfReqs--;
   // show input when everything answered
