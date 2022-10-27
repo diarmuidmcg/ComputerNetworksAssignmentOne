@@ -7,7 +7,7 @@ import config from "./config.js";
 // creating a udp ingress
 const ingress = dgram.createSocket("udp4");
 
-const clients = [];
+let clients = [];
 const workers = [];
 
 // emits when any error occurs
@@ -25,6 +25,7 @@ ingress.on("message", (msg, info) => {
   switch (headerByteOne) {
     // is client init
     case 0:
+      clients.push(info.port);
       break;
     // is worker init
     case 1:
@@ -38,6 +39,8 @@ ingress.on("message", (msg, info) => {
       break;
     // is client close
     case 4:
+      // remove client by port number
+      clients = clients.filter((item) => item !== info.port);
       break;
     // is worker close
     case 5:
@@ -45,7 +48,8 @@ ingress.on("message", (msg, info) => {
 
     default:
   }
-  console.log(JSON.stringify(workers));
+  console.log("clients are " + JSON.stringify(clients));
+  console.log("workers are " + JSON.stringify(workers));
 }); // end ingress.on
 
 function handleWorkerSetup(headerByteTwo, port) {

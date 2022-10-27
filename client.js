@@ -19,14 +19,17 @@ function readLineAsync(message) {
   return new Promise((resolve, reject) => {
     rl.question(message, (answer) => {
       // exit process if exit
-      if (answer == "exit") return process.exit();
-      // get all requests
-      let requestedFiles = answer.split(" ");
-      numberOfReqs = requestedFiles.length;
-      // iterate thru & send to server
-      for (let i = 0; i < numberOfReqs; i++) {
-        let data = Buffer.from(requestedFiles[i]);
-        sendMessage(data);
+      if (answer == "exit") {
+        sendCloseDownMessage();
+      } else {
+        // get all requests
+        let requestedFiles = answer.split(" ");
+        numberOfReqs = requestedFiles.length;
+        // iterate thru & send to server
+        for (let i = 0; i < numberOfReqs; i++) {
+          let data = Buffer.from(requestedFiles[i]);
+          sendMessage(data);
+        }
       }
       resolve(answer);
     });
@@ -41,6 +44,7 @@ async function handleServerInput() {
 
 // initial ask for user input
 handleServerInput();
+sendSetUpMessage();
 
 client.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
@@ -72,6 +76,55 @@ function sendMessage(data) {
         conf.serverHost,
         conf.port
       );
+    }
+  });
+}
+function sendSetUpMessage() {
+  // create header
+  const header = new Uint8Array(2);
+  // since client setup, first header byte is 0
+  header[0] = 0;
+  // set second headerbyte to 0
+  header[1] = 0;
+  const data = Buffer.from(header);
+  //sending msg
+  client.send(data, conf.port, conf.serverHost, (error) => {
+    if (error) {
+      console.log(error);
+      client.close();
+    } else {
+      console.log(
+        "single msg sent to ingress from ",
+        conf.serverHost,
+        conf.port
+      );
+    }
+  });
+}
+
+function sendCloseDownMessage() {
+  // create header
+  const header = new Uint8Array(2);
+  // since client setup, first header byte is 0
+  header[0] = 4;
+  // set second headerbyte to 0
+  header[1] = 0;
+  const data = Buffer.from(header);
+  console.log("sending close down client");
+
+  //sending msg
+  client.send(data, conf.port, conf.serverHost, (error) => {
+    if (error) {
+      console.log(error);
+      client.close();
+    } else {
+      console.log(
+        "single msg sent to ingress from ",
+        conf.serverHost,
+        conf.port
+      );
+      client.close();
+      process.exit();
     }
   });
 }
