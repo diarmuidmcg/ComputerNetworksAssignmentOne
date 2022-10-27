@@ -14,46 +14,51 @@ const rl = readline.createInterface({
 });
 
 // var for how many file reqs sent at once, used to prompt user input again
-let numberOfReqs;
+let fileReturned;
 
 function readLineAsync(message) {
   return new Promise((resolve, reject) => {
     rl.question(message, (answer) => {
       const underCaseAnswer = answer.toLowerCase();
-      let fileReturned = null;
+
       // exit process if exit
-      if (underCaseAnswer == "exit") return process.exit();
-      else if (
-        underCaseAnswer.includes("1") ||
-        underCaseAnswer.includes("refunk")
-      )
-        fileReturned = 0;
-      else if (
-        underCaseAnswer.includes("2") ||
-        underCaseAnswer.includes("weeve")
-      )
-        fileReturned = 1;
-      else if (underCaseAnswer.includes("3") || underCaseAnswer.includes("pic"))
-        fileReturned = 2;
+      if (underCaseAnswer == "exit") sendCloseDownMessage();
       else {
-        console.log("That is not valid input. try again\n");
-        handleServerInput();
+        if (underCaseAnswer.includes("1") || underCaseAnswer.includes("refunk"))
+          fileReturned = 0;
+        else if (
+          underCaseAnswer.includes("2") ||
+          underCaseAnswer.includes("weeve")
+        )
+          fileReturned = 1;
+        else if (
+          underCaseAnswer.includes("3") ||
+          underCaseAnswer.includes("pic")
+        )
+          fileReturned = 2;
+        else {
+          console.log("That is not valid input. try again\n");
+          handleServerInput(
+            "What file will this worker forward?\n1. refunk\n2. weeve\n3. picture\n\n"
+          );
+        }
+        sendSetUpMessage(fileReturned);
+        handleServerInput("\ntype 'exit' to quit\n");
       }
-      sendSetUpMessage(fileReturned);
       // send init msg
       resolve(answer);
     });
   });
 }
 
-async function handleServerInput() {
-  await readLineAsync(
-    "What file will this worker forward?\n1. refunk\n2. weeve\n3. picture\n\n"
-  );
+async function handleServerInput(msg) {
+  await readLineAsync(msg);
 }
 
 // initial ask for user input
-handleServerInput();
+handleServerInput(
+  "What file will this worker forward?\n1. refunk\n2. weeve\n3. picture\n\n"
+);
 
 worker.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
@@ -108,6 +113,33 @@ function sendSetUpMessage(fileToReturn) {
         conf.serverHost,
         conf.port
       );
+    }
+  });
+}
+
+function sendCloseDownMessage(fileToReturn) {
+  // create header
+  const header = new Uint8Array(2);
+  // since worker close down, first header byte is 5
+  header[0] = 5;
+  // set second headerbyte to file to be returned
+  header[1] = fileToReturn;
+  const data = Buffer.from(header);
+  console.log("sending close down client");
+
+  //sending msg
+  worker.send(data, conf.port, conf.serverHost, (error) => {
+    if (error) {
+      console.log(error);
+      worker.close();
+    } else {
+      console.log(
+        "single msg sent to ingress from ",
+        conf.serverHost,
+        conf.port
+      );
+      worker.close();
+      process.exit();
     }
   });
 }

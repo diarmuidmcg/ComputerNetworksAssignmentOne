@@ -12,10 +12,13 @@ const workerPool = [
   // Start a pool of four workers
   new Worker("./worker.js"),
   new Worker("./worker.js"),
-  new Worker("./worker.js"),
-  new Worker("./worker.js"),
+  // new Worker("./worker.js"),
+  // new Worker("./worker.js"),
 ];
 const waiting = [];
+
+// try creating worker
+// let myWorker = new MyWorker();
 
 // creating a udp ingress
 const ingress = dgram.createSocket("udp4");
