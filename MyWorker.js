@@ -3,6 +3,9 @@ import dgram from "node:dgram";
 import conf from "./config.js";
 import * as readline from "readline";
 
+import fs from "fs";
+var files = fs.readdirSync("./filesToReturn");
+
 console.log("creating worker");
 // creating a worker socket
 const worker = dgram.createSocket("udp4");
@@ -62,23 +65,36 @@ handleServerInput(
 
 worker.on("message", (msg, info) => {
   console.log("Data received from server : " + msg.toString());
-  const returnAsJson = JSON.parse(msg.toString());
-  if (returnAsJson.status == 200) {
-    // convert base 64 back to text
-    let buff = new Buffer.from(returnAsJson.contentReturned, "base64");
-    let text = buff.toString("ascii");
-    console.log("\nFile contents are\n" + text);
+  let particularFile;
+  switch (fileReturned) {
+    case 0:
+      particularFile = "refunk.txt";
+      break;
+    case 1:
+      particularFile = "weeve.txt";
+      break;
+    case 2:
+      particularFile = "basic_pic.jpg";
+      break;
+    default:
   }
-  // decrement since its been answered
-  numberOfReqs--;
-  // show input when everything answered
-  if (numberOfReqs == 0) {
-    console.log("\n");
-    handleServerInput();
-  }
+
+  const contents = fs.readFileSync(`./filesToReturn/${particularFile}`, {
+    encoding: "base64",
+  });
+
+  sendFileMessage(contents);
 });
 
-function sendMessage(data) {
+function sendSetUpMessage(fileToReturn) {
+  // create header
+  const header = new Uint8Array(2);
+  // since worker setup, first header byte is 1
+  header[0] = 1;
+  // set second headerbyte to file to be returned
+  header[1] = fileToReturn;
+  const data = Buffer.from(header);
+
   //sending msg
   worker.send(data, conf.port, conf.serverHost, (error) => {
     if (error) {
@@ -93,17 +109,19 @@ function sendMessage(data) {
     }
   });
 }
-function sendSetUpMessage(fileToReturn) {
+
+function sendFileMessage(file) {
+  console.log("sending file ");
   // create header
   const header = new Uint8Array(2);
-  // since worker setup, first header byte is 1
-  header[0] = 1;
+  // since worker returning file, first header byte is 3
+  header[0] = 3;
   // set second headerbyte to file to be returned
-  header[1] = fileToReturn;
+  header[1] = fileReturned;
   const data = Buffer.from(header);
 
   //sending msg
-  worker.send(data, conf.port, conf.serverHost, (error) => {
+  worker.send([data, file], conf.port, conf.serverHost, (error) => {
     if (error) {
       console.log(error);
       worker.close();

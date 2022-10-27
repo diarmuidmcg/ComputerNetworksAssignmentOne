@@ -36,8 +36,7 @@ ingress.on("message", (msg, info) => {
       break;
     // is client msg
     case 2:
-      const payload = new TextDecoder().decode(msg);
-      handleClientMessage(payload, info);
+      handleClientMessage(msg, info);
       break;
     // is worker msg
     case 3:
@@ -75,7 +74,8 @@ function handleWorkerSetup(headerByteTwo, port) {
 }
 
 function handleClientMessage(msg, info) {
-  const genMsg = msg.toString().toLowerCase();
+  const payload = new TextDecoder().decode(msg);
+  const genMsg = payload.toString().toLowerCase();
   console.log("gen msg is " + genMsg);
   // check if msg is requesting a txt (make all case insensitive)
   if (genMsg.includes("txt") || genMsg.includes("jpg")) {
