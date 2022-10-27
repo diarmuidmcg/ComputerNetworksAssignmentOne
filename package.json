@@ -6,8 +6,9 @@
   "scripts": {
     "start": "npm run dev",
     "build": "npm run clean && tsc",
-    "server": "nodemon ingress.js",
+    "server": "nodemon server.js",
     "client": "nodemon client.js",
+    "worker": "nodemon worker.js",
     "clean": "rimraf ./dist"
   },
   "author": "Diarmuid McGonagle",
