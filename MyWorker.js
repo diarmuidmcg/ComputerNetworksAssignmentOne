@@ -91,12 +91,16 @@ function sendMessage(data) {
 function sendSetUpMessage(fileToReturn) {
   // const data1 = Buffer.from(1);
   // const data2 = Buffer.from(fileToReturn);
-  const header = new ArrayBuffer(2);
+  const header = new Uint8Array(2);
   // since worker setup, first header byte is 1
   header[0] = 1;
   // set second headerbyte to file to be returned
   header[1] = fileToReturn;
+  console.log("header is " + JSON.stringify(header));
   const data = Buffer.from(header);
+  // const data = Buffer.from(header);
+  console.log("data is " + JSON.stringify(data));
+
   //sending msg
   worker.send(data, conf.port, conf.serverHost, (error) => {
     if (error) {
