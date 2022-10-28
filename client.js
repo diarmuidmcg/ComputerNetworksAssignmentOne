@@ -35,13 +35,11 @@ function readLineAsync(message) {
     });
   });
 }
-
 async function handleServerInput() {
   await readLineAsync(
     "what would you like to query?\nLeave spaces between files to serve more than one\n"
   );
 }
-
 // initial ask for user input
 handleServerInput();
 sendSetUpMessage();
@@ -109,7 +107,6 @@ function sendSetUpMessage() {
     }
   });
 }
-
 function sendCloseDownMessage() {
   // create header
   const header = new Uint8Array(2);

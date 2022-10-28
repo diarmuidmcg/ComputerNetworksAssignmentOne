@@ -22,46 +22,32 @@ ingress.on("error", (error) => {
 // emits on new datagram msg
 ingress.on("message", (msg, info) => {
   // check header for who it's from
-  console.log(msg);
-  console.log("msg 0 is " + msg[0]);
-  console.log("msg 1 is " + msg[1]);
-
-  console.log(info);
   const headerByteOne = msg[0];
   switch (headerByteOne) {
-    // is client init
-    case 0:
+    case 0: // is client init
       const clientId = availableClients.pop();
       takenClients.push(clientId);
       clients.push({ port: info.port, index: clientId });
       break;
-    // is worker init
-    case 1:
+    case 1: // is worker init
       handleWorkerSetup(msg[1], info.port);
       break;
-    // is client msg
-    case 2:
+    case 2: // is client msg
       handleClientMessage(msg, info);
       break;
-    // is worker msg
-    case 3:
+    case 3: // is worker msg
       handleWorkerFile(msg, info);
       break;
-    // is client close
-    case 4:
+    case 4: // is client close
       // remove client by port number
       clients = clients.filter((item) => item.port !== info.port);
       break;
-    // is worker close
-    case 5:
+    case 5: // is worker close
       // remove worker by port number
       workers = workers.filter((item) => item.port !== info.port);
       break;
-
     default:
   }
-  console.log("clients are " + JSON.stringify(clients));
-  console.log("workers are " + JSON.stringify(workers));
 }); // end ingress.on
 
 function handleWorkerSetup(headerByteTwo, port) {
@@ -87,13 +73,11 @@ function handleClientMessage(msg, info) {
     // get proper portId from client list
     let client = clients.filter((item) => item.port === info.port);
     let clientPortId = client[0].index;
-
     // create header
     const header = new Uint8Array(3);
     // since worker returning file, first header byte is 3
     header[0] = 6;
     header[2] = clientPortId;
-
     const data = Buffer.from(header);
     // get proper port from worker list
     let worker = workers.filter((item) => genMsg.includes(item.file));
@@ -136,11 +120,11 @@ function handleClientMessage(msg, info) {
 }
 
 function handleWorkerFile(msg, info) {
+  // get the portId from the 3rd header byte
   const portId = msg[2];
+  // find the corresponding port
   let client = clients.filter((item) => item.index === portId);
-
   const payload = new TextDecoder().decode(msg);
-
   // create header
   const header = new Uint8Array(2);
   // since worker setup, first header byte is 1
@@ -148,7 +132,6 @@ function handleWorkerFile(msg, info) {
   // set second headerbyte to file to be returned
   header[1] = msg[1];
   const data = Buffer.from(header);
-
   //sending msg
   ingress.send(
     [data, payload],

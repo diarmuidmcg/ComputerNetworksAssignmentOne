@@ -15,10 +15,8 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-
 // var for how many file reqs sent at once, used to prompt user input again
 let fileReturned;
-
 function readLineAsync(message) {
   return new Promise((resolve, reject) => {
     rl.question(message, (answer) => {
@@ -53,11 +51,9 @@ function readLineAsync(message) {
     });
   });
 }
-
 async function handleServerInput(msg) {
   await readLineAsync(msg);
 }
-
 // initial ask for user input
 handleServerInput(
   "What file will this worker forward?\n1. refunk\n2. weeve\n3. picture\n\n"
@@ -78,11 +74,9 @@ worker.on("message", (msg, info) => {
       break;
     default:
   }
-
   const contents = fs.readFileSync(`./filesToReturn/${particularFile}`, {
     encoding: "base64",
   });
-
   sendFileMessage(msg, contents);
 });
 
@@ -109,7 +103,6 @@ function sendSetUpMessage(fileToReturn) {
     }
   });
 }
-
 function sendFileMessage(msg, file) {
   console.log("sending file ");
   console.log("client id is " + msg[2]);
@@ -136,7 +129,6 @@ function sendFileMessage(msg, file) {
     }
   });
 }
-
 function sendCloseDownMessage(fileToReturn) {
   // create header
   const header = new Uint8Array(2);
